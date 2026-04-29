@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mines Pro v4.6</title>
+    <title>Mines Pro v4.6 - Final</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <style>
@@ -18,7 +18,7 @@
         .tab-btn { flex: 1; padding: 15px; border: none; background: transparent; color: var(--text-muted); font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
         .tab-btn.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
 
-        .app-container { width: 100%; max-width: 480px; padding: 20px; box-sizing: border-box; display: none; padding-bottom: 60px; }
+        .app-container { width: 100%; max-width: 480px; padding: 20px; box-sizing: border-box; display: none; padding-bottom: 80px; }
         .app-container.active { display: block; }
 
         .input-group { margin-bottom: 12px; }
@@ -33,7 +33,6 @@
         .btn-outline { background: #2f4553; color: white; border: 1px solid var(--border); }
         .btn-red { background: var(--mine-color); color: white; }
 
-        /* Style untuk tombol yang di-disable */
         button:disabled { opacity: 0.3 !important; cursor: not-allowed !important; filter: grayscale(1); }
 
         .bet-tools { display: flex; gap: 5px; margin-top: 5px; }
@@ -53,8 +52,8 @@
         .history-list { margin-top: 10px; max-height: 80px; overflow-y: auto; font-size: 10px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 5px; }
         .history-item { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
-        /* Footer Credit */
-        .footer-credit { position: absolute; bottom: 10px; left: 15px; font-size: 9px; color: var(--text-muted); opacity: 0.6; pointer-events: none; }
+        /* Footer Fixed di Pojok Kiri Bawah */
+        .footer-credit { position: fixed; bottom: 10px; left: 15px; font-size: 10px; color: var(--text-muted); opacity: 0.8; pointer-events: none; z-index: 1000; text-shadow: 1px 1px 2px #000; }
 
         .is-mine { background: rgba(255, 68, 68, 0.3) !important; border-color: var(--mine-color) !important; }
         .is-gem { background: rgba(0, 231, 1, 0.2) !important; border-color: var(--accent) !important; }
@@ -135,7 +134,7 @@
             3: [1.12, 1.29, 1.48, 1.71, 2.00, 2.35, 2.79, 3.35, 4.07, 5.00, 6.26, 7.96, 10.35, 13.80, 18.97, 27.11, 40.66, 65.06, 113.85, 227.70, 569.25, 2277.00]
         };
         function getPureMult(m, g) { 
-            if(g === 0) return 1.0; // Murni 1.00x tanpa edge di awal
+            if(g === 0) return 1.0; 
             const fact = (n) => (n <= 1 ? 1 : n * fact(n - 1)); 
             const comb = (n, k) => (n < k ? 0 : fact(n) / (fact(k) * fact(n - k))); 
             return (comb(25, g) / comb(25 - m, g)) * 0.99; 
@@ -167,7 +166,7 @@
             pBoardInit();
             document.getElementById('pStartBtn').classList.add('hidden');
             document.getElementById('pCashoutBtn').classList.remove('hidden');
-            document.getElementById('pRandomBtn').disabled = false; // Aktifkan Random Pick
+            document.getElementById('pRandomBtn').disabled = false;
             document.getElementById('pCashoutBtn').innerText = `Cashout 1.00x`;
             document.getElementById('pProfitDisplay').style.color = "white";
             document.getElementById('pProfitDisplay').innerText = "0,00";
@@ -222,7 +221,7 @@
             pMines.forEach(m => { const c = document.getElementById('p-'+m); if(!c.classList.contains('is-mine')) { c.innerHTML='💣'; c.style.opacity='0.5'; } });
             document.getElementById('pStartBtn').classList.remove('hidden');
             document.getElementById('pCashoutBtn').classList.add('hidden');
-            document.getElementById('pRandomBtn').disabled = true; // Matikan Random Pick kembali
+            document.getElementById('pRandomBtn').disabled = true;
             stepNonce(1);
             balHistory.push(balance);
             if(balHistory.length > 50) balHistory.shift();
