@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mines Pro v4.5 - Suite</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0f212e; --bg-panel: #1a2c38; --accent: #00e701;
+            --target-color: #f3ad0c; --mine-color: #ff4444; --text-main: #ffffff;
+            --text-muted: #b1bad3; --border: #2f4553;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
+        
+        .tabs { width: 100%; max-width: 480px; display: flex; background: var(--bg-panel); border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        .tab-btn { flex: 1; padding: 15px; border: none; background: transparent; color: var(--text-muted); font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
+        .tab-btn.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+
+        .app-container { width: 100%; max-width: 480px; padding: 20px; box-sizing: border-box; display: none; }
+        .app-container.active { display: block; }
+
+        .input-group { margin-bottom: 12px; }
+        label { display: block; font-size: 10px; font-weight: bold; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; }
+        input { width: 100%; padding: 10px; background: var(--bg-dark); border: 2px solid var(--border); color: white; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+        
+        .nonce-row { display: flex; gap: 5px; margin-top: 5px; }
+        .btn-step { flex: 1; padding: 8px; background: var(--border); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 10px; }
+
+        .btn-main { width: 100%; padding: 14px; border: none; border-radius: 6px; font-weight: 800; font-size: 13px; cursor: pointer; text-transform: uppercase; margin-top: 5px; transition: 0.2s; }
+        .btn-green { background: var(--accent); color: #000; }
+        .btn-outline { background: #2f4553; color: white; border: 1px solid var(--border); }
+        .btn-red { background: var(--mine-color); color: white; }
+
+        .bet-tools { display: flex; gap: 5px; margin-top: 5px; }
+        .btn-tool { flex: 1; padding: 8px; background: var(--border); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; }
+        .btn-topup { width: auto; min-width: 80px; padding: 6px 12px; background: var(--border); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
+
+        .grid-container { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 15px; background: var(--bg-dark); padding: 10px; border-radius: 10px; }
+        .cell { aspect-ratio: 1; background: var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; position: relative; cursor: pointer; border: 2px solid transparent; }
+        .cell sup { font-size: 10px; position: absolute; top: 2px; right: 4px; color: var(--accent); }
+
+        .stats-panel { background: var(--bg-panel); border-radius: 8px; padding: 15px; margin-top: 20px; border: 1px solid var(--border); }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-item { text-align: center; }
+        .stat-item span { display: block; font-size: 10px; color: var(--text-muted); }
+        #balanceChart { width: 100%; height: 120px; background: #07141e; border-radius: 4px; margin-top: 10px; }
+
+        .history-list { margin-top: 10px; max-height: 80px; overflow-y: auto; font-size: 10px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 5px; }
+        .history-item { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+        .is-mine { background: rgba(255, 68, 68, 0.3) !important; border-color: var(--mine-color) !important; }
+        .is-gem { background: rgba(0, 231, 1, 0.2) !important; border-color: var(--accent) !important; }
+        .target-active { border-color: var(--target-color) !important; }
+        .hidden { display: none !important; }
+        .profit-red { color: var(--mine-color) !important; }
+        .profit-white { color: white !important; }
+    </style>
+</head>
+<body>
+
+    <div class="tabs">
+        <button id="t-verify" class="tab-btn active" onclick="switchTab('verify')">Verify</button>
+        <button id="t-play" class="tab-btn" onclick="switchTab('play')">Play</button>
+    </div>
+
+    <div id="verify-tab" class="app-container active">
+        <div class="input-group"><label>Server Seed</label><input type="text" id="vServerSeed" value="03894d92ce016260101601afef2bf432a971dd65726be4dae33149b5960a8b40"></div>
+        <div class="input-group"><label>Client Seed</label><input type="text" id="vClientSeed" value="aN2S4mSZbX"></div>
+        <div style="display: flex; gap: 10px;">
+            <div class="input-group" style="flex: 1;">
+                <label>Nonce</label>
+                <input type="number" id="vNonce" value="1" onchange="vCalculate()">
+                <div class="nonce-row">
+                    <button class="btn-step" onclick="stepNonce(-1)">▼ PREV</button>
+                    <button class="btn-step" onclick="stepNonce(1)">▲ NEXT</button>
+                </div>
+            </div>
+            <div class="input-group" style="flex: 1;"><label>Mines</label><input type="number" id="vMinesCount" value="3" onchange="vCalculate()"></div>
+        </div>
+        <div id="vStatus" style="font-size: 11px; text-align: center; color: var(--text-muted); margin: 10px 0;">Pilih pola untuk mencari Nonce.</div>
+        <div id="vControlContainer">
+            <div style="display: flex; gap: 5px;">
+                <button class="btn-main btn-outline" style="flex:1" onclick="vStartSearch('prev')">Search Prev</button>
+                <button class="btn-main btn-green" style="flex:1" onclick="vStartSearch('next')">Search Next</button>
+            </div>
+        </div>
+        <button id="vStopBtn" class="btn-main btn-red hidden" onclick="vStopSearch()">Stop Searching</button>
+        <div class="grid-container" id="vBoard"></div>
+        <button class="btn-main btn-outline" style="margin-top:10px; color:var(--mine-color); border-color:var(--mine-color)" onclick="vClear()">Clear Selection</button>
+    </div>
+
+    <div id="play-tab" class="app-container">
+        <div style="background: var(--bg-panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div><span style="font-size: 10px; color: var(--text-muted);">SALDO (IDR)</span><br><b id="pBalanceDisplay" style="font-size: 18px; color: var(--accent);">1.000.000,00</b></div>
+                <button class="btn-topup" onclick="toggleTopUp()">Top Up</button>
+            </div>
+            <div id="topUpBox" class="hidden" style="margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px;">
+                <div style="display: flex; gap: 5px;">
+                    <input type="number" id="pTopUpInput" placeholder="Jumlah IDR" value="100000">
+                    <button class="btn-step" style="flex: 0.3;" onclick="doTopUp()">OK</button>
+                </div>
+                <div id="pTopUpHistory" class="history-list"></div>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-bottom: 15px; background: var(--bg-dark); padding: 10px; border-radius: 6px;">
+            <div><span style="font-size: 10px; color: var(--text-muted);">NONCE</span><br><b id="pNonceDisp" style="color:var(--accent)">#1</b></div>
+            <div style="text-align: right;"><span style="font-size: 10px; color: var(--text-muted);">PROFIT</span><br><b id="pProfitDisplay" class="profit-white">0,00</b></div>
+        </div>
+
+        <div class="input-group">
+            <label>Bet Amount</label>
+            <input type="number" id="pBetAmount" value="10000">
+            <div class="bet-tools">
+                <button class="btn-tool" onclick="adjustBet(0.5)">1/2</button>
+                <button class="btn-tool" onclick="adjustBet(2)">x2</button>
+                <button class="btn-tool" onclick="adjustBet('max')">Max</button>
+            </div>
+        </div>
+
+        <button id="pStartBtn" class="btn-main btn-green" onclick="pStartGame()">Bet</button>
+        <button id="pCashoutBtn" class="btn-main btn-green hidden" onclick="pCashout()">Cashout 1.00x</button>
+        <button id="pRandomBtn" class="btn-main btn-outline hidden" style="margin-top: 5px;" onclick="pRandomPick()">Random Pick</button>
+
+        <div class="grid-container" id="pBoard"></div>
+
+        <div class="stats-panel">
+            <div class="stats-grid">
+                <div class="stat-item"><span>Wins/Loss</span><b id="sWL">0 / 0</b></div>
+                <div class="stat-item"><span>Win Streak</span><b id="sWS" style="color:var(--accent)">0</b></div>
+                <div class="stat-item"><span>Loss Streak</span><b id="sLS" style="color:var(--mine-color)">0</b></div>
+                <div class="stat-item"><span>Peak Balance</span><b id="sMaxBal" style="color:var(--target-color)">1.000.000,00</b></div>
+                <div class="stat-item" style="grid-column: span 2; margin-top: 5px;"><span>Max (W/L Streak)</span><b id="sMax">0 / 0</b></div>
+            </div>
+            <canvas id="balanceChart" width="800" height="240"></canvas>
+            <button class="btn-main btn-outline" style="font-size:10px; margin-top:15px;" onclick="resetStats()">Reset Statistic</button>
+        </div>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+
+        const M_TABLE = {
+            1: [1.03, 1.08, 1.12, 1.18, 1.24, 1.30, 1.37, 1.46, 1.55, 1.65, 1.77, 1.90, 2.06, 2.25, 2.47, 2.75, 3.09, 3.54, 4.12, 4.95, 6.19, 8.25, 12.38, 24.75],
+            2: [1.08, 1.17, 1.29, 1.41, 1.56, 1.74, 1.94, 2.18, 2.47, 2.83, 3.26, 3.81, 4.50, 5.40, 6.60, 8.25, 10.61, 14.14, 19.80, 29.70, 49.50, 99.00, 297.00],
+            3: [1.12, 1.29, 1.48, 1.71, 2.00, 2.35, 2.79, 3.35, 4.07, 5.00, 6.26, 7.96, 10.35, 13.80, 18.97, 27.11, 40.66, 65.06, 113.85, 227.70, 569.25, 2277.00]
+        };
+
+        function getPureMult(m, g) {
+            const fact = (n) => (n <= 1 ? 1 : n * fact(n - 1));
+            const comb = (n, k) => (n < k ? 0 : fact(n) / (fact(k) * fact(n - k)));
+            return (comb(25, g) / comb(25 - m, g)) * 0.99;
+        }
+
+        function getTableDisp(m, g) {
+            if(M_TABLE[m] && M_TABLE[m][g-1]) return M_TABLE[m][g-1].toFixed(2);
+            return getPureMult(m, g).toFixed(2);
+        }
+
+        let balance = 1000000.00;
+        let initialBalance = 1000000.00;
+        let peakBalance = 1000000.00;
+        let topUpHistory = [];
+        let balHistory = [1000000.00];
+        let wins = 0, loss = 0, curWS = 0, curLS = 0, maxWS = 0, maxLS = 0;
+        let pActive = false, pMines = [], pRev = 0, pBet = 0;
+        let vTarget = new Set(), vSearching = false;
+
+        function switchTab(t) {
+            vStopSearch();
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.app-container').forEach(c => c.classList.remove('active'));
+            document.getElementById('t-'+t).classList.add('active');
+            document.getElementById(t+'-tab').classList.add('active');
+            document.getElementById('pNonceDisp').innerText = "#" + document.getElementById('vNonce').value;
+        }
+
+        // --- VERIFY ---
+        function vInit() {
+            const b = document.getElementById('vBoard'); b.innerHTML = '';
+            for(let i=0; i<25; i++) {
+                let c = document.createElement('div'); c.className='cell'; c.id='v-'+i; c.innerHTML='💎';
+                c.onclick = () => {
+                    if(vSearching) return;
+                    vTarget.has(i) ? vTarget.delete(i) : vTarget.add(i);
+                    c.classList.toggle('target-active');
+                    document.getElementById('vMinesCount').value = vTarget.size || 3;
+                };
+                b.appendChild(c);
+            }
+            vCalculate();
+        }
+
+        function stepNonce(v) {
+            const n = document.getElementById('vNonce');
+            n.value = Math.max(1, parseInt(n.value) + v);
+            vCalculate();
+            document.getElementById('pNonceDisp').innerText = "#" + n.value;
+        }
+
+        function getMines(s, c, n, count) {
+            let b = [];
+            for(let i=0; i<Math.ceil(count/8); i++) {
+                let h = CryptoJS.HmacSHA256(`${c}:${n}:${i}`, s).toString(CryptoJS.enc.Hex);
+                for(let j=0; j<h.length; j+=2) b.push(parseInt(h.substring(j, j+2), 16));
+            }
+            let g = Array.from({length:25}, (_, i)=>i), res = [];
+            for(let i=0; i<count; i++) {
+                let ch = b.slice(i*4, (i+1)*4);
+                let f = (ch[0]/256) + (ch[1]/65536) + (ch[2]/16777216) + (ch[3]/4294967296);
+                res.push(g.splice(Math.floor(f * (25 - i)), 1)[0]);
+            }
+            return res;
+        }
+
+        function vCalculate() {
+            const mines = getMines(document.getElementById('vServerSeed').value, document.getElementById('vClientSeed').value, document.getElementById('vNonce').value, document.getElementById('vMinesCount').value);
+            for(let i=0; i<25; i++) {
+                const c = document.getElementById('v-'+i);
+                c.classList.remove('is-mine');
+                c.innerHTML = mines.includes(i) ? '💣' : '💎';
+                if(mines.includes(i)) c.classList.add('is-mine');
+            }
+        }
+
+        function vStartSearch(dir) {
+            if(vTarget.size === 0) return alert("Pilih target!");
+            vSearching = true;
+            document.getElementById('vControlContainer').classList.add('hidden');
+            document.getElementById('vStopBtn').classList.remove('hidden');
+            const s = document.getElementById('vServerSeed').value, c = document.getElementById('vClientSeed').value, startN = parseInt(document.getElementById('vNonce').value), count = parseInt(document.getElementById('vMinesCount').value), targets = Array.from(vTarget);
+            let curN = (dir === 'next') ? startN + 1 : startN - 1;
+
+            function run() {
+                if(!vSearching) return;
+                for(let i=0; i<4000; i++) {
+                    if(curN < 1) { vStopSearch(); alert("Nonce 0!"); return; }
+                    let m = getMines(s, c, curN, count);
+                    if(targets.every(p => m.includes(p))) {
+                        const delta = curN - startN;
+                        const deltaText = delta > 0 ? `(+${delta})` : `(${delta})`;
+                        document.getElementById('vNonce').value = curN;
+                        document.getElementById('vStatus').innerHTML = `<b style="color:var(--accent)">Found! Nonce ${curN} <span style="color:white">(${deltaText})</span></b>`;
+                        vStopSearch(); vCalculate(); return;
+                    }
+                    dir==='next'?curN++:curN--;
+                }
+                document.getElementById('vStatus').innerText = `Searching... #${curN}`;
+                setTimeout(run, 5);
+            }
+            run();
+        }
+        function vStopSearch() { vSearching = false; document.getElementById('vControlContainer').classList.remove('hidden'); document.getElementById('vStopBtn').classList.add('hidden'); }
+        function vClear() { vTarget.clear(); vInit(); }
+
+        // --- PLAY ---
+        function toggleTopUp() { document.getElementById('topUpBox').classList.toggle('hidden'); renderTopUpHistory(); }
+        
+        function doTopUp() { 
+            const input = document.getElementById('pTopUpInput');
+            const val = parseFloat(input.value) || 0;
+            if(val <= 0) return;
+            balance += val;
+            initialBalance = balance; 
+            if(balance > peakBalance) peakBalance = balance;
+            
+            const now = new Date();
+            const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+            topUpHistory.unshift({ time: timeStr, amount: val });
+            
+            updateUI(); 
+            toggleTopUp();
+            drawChart();
+        }
+
+        function renderTopUpHistory() {
+            const container = document.getElementById('pTopUpHistory');
+            if(topUpHistory.length === 0) { container.innerHTML = '<i>Belum ada riwayat top up.</i>'; return; }
+            container.innerHTML = topUpHistory.map(h => `
+                <div class="history-item"><span>${h.time}</span><b style="color:var(--accent)">+${h.amount.toLocaleString('id-ID')}</b></div>
+            `).join('');
+        }
+
+        function adjustBet(v) {
+            let b = document.getElementById('pBetAmount');
+            b.value = v === 'max' ? Math.floor(balance) : (parseFloat(b.value)*v).toFixed(2);
+        }
+
+        function pStartGame() {
+            pBet = parseFloat(document.getElementById('pBetAmount').value);
+            const mCount = parseInt(document.getElementById('vMinesCount').value);
+            if(pBet > balance || pBet <= 0) return alert("Saldo/Bet!");
+            balance -= pBet;
+            pActive = true; pRev = 0;
+            pMines = getMines(document.getElementById('vServerSeed').value, document.getElementById('vClientSeed').value, document.getElementById('vNonce').value, mCount);
+            pBoardInit();
+            document.getElementById('pStartBtn').classList.add('hidden');
+            document.getElementById('pCashoutBtn').classList.remove('hidden');
+            document.getElementById('pRandomBtn').classList.remove('hidden');
+            document.getElementById('pCashoutBtn').innerText = `Cashout 1.00x`;
+            document.getElementById('pProfitDisplay').className = "profit-white";
+            document.getElementById('pProfitDisplay').innerText = "0,00";
+            updateUI();
+        }
+
+        function pBoardInit() {
+            const b = document.getElementById('pBoard'); b.innerHTML = '';
+            for(let i=0; i<25; i++) {
+                let c = document.createElement('div'); c.className='cell'; c.id='p-'+i;
+                c.onclick = () => pClick(i); b.appendChild(c);
+            }
+        }
+
+        function pClick(idx) {
+            if(!pActive) return;
+            const c = document.getElementById('p-'+idx);
+            if(c.classList.contains('is-gem')) return;
+            if(pMines.includes(idx)) {
+                pActive = false; c.classList.add('is-mine'); c.innerHTML = '💣';
+                loss++; curLS++; curWS = 0; if(curLS > maxLS) maxLS = curLS;
+                document.getElementById('pProfitDisplay').innerText = `-${pBet.toLocaleString('id-ID', {minimumFractionDigits: 2})}`;
+                document.getElementById('pProfitDisplay').className = "profit-red";
+                finish();
+            } else {
+                pRev++; c.classList.add('is-gem'); c.innerHTML = '💎';
+                let pureMult = getPureMult(pMines.length, pRev);
+                document.getElementById('pProfitDisplay').innerText = (pBet * pureMult).toLocaleString('id-ID', {minimumFractionDigits: 2});
+                if(pRev === (25 - pMines.length)) pCashout();
+                else document.getElementById('pCashoutBtn').innerText = `Cashout ${getTableDisp(pMines.length, pRev)}x`;
+            }
+        }
+
+        function pRandomPick() {
+            if(!pActive) return;
+            let available = [];
+            for(let i=0; i<25; i++) { if(!document.getElementById('p-'+i).classList.contains('is-gem')) available.push(i); }
+            if(available.length > 0) pClick(available[Math.floor(Math.random() * available.length)]);
+        }
+
+        function pCashout() {
+            if(!pActive) return;
+            let mult = getPureMult(pMines.length, pRev);
+            balance += (pBet * mult);
+            if(balance > peakBalance) peakBalance = balance;
+            wins++; curWS++; curLS = 0; if(curWS > maxWS) maxWS = curWS;
+            finish();
+        }
+
+        function finish() {
+            pActive = false;
+            pMines.forEach(m => { const c = document.getElementById('p-'+m); if(!c.classList.contains('is-mine')) { c.innerHTML='💣'; c.style.opacity='0.5'; } });
+            document.getElementById('pStartBtn').classList.remove('hidden');
+            document.getElementById('pCashoutBtn').classList.add('hidden');
+            document.getElementById('pRandomBtn').classList.add('hidden');
+            stepNonce(1);
+            balHistory.push(balance);
+            if(balHistory.length > 50) balHistory.shift();
+            updateUI(); drawChart();
+        }
+
+        function resetStats() {
+            wins = 0; loss = 0; curWS = 0; curLS = 0; maxWS = 0; maxLS = 0;
+            peakBalance = balance; topUpHistory = [];
+            balHistory = [balance]; initialBalance = balance;
+            updateUI(); drawChart(); renderTopUpHistory();
+        }
+
+        function updateUI() {
+            document.getElementById('pBalanceDisplay').innerText = balance.toLocaleString('id-ID', {minimumFractionDigits: 2});
+            document.getElementById('sWL').innerText = `${wins} / ${loss}`;
+            document.getElementById('sWS').innerText = curWS;
+            document.getElementById('sLS').innerText = curLS;
+            document.getElementById('sMax').innerText = `${maxWS} / ${maxLS}`;
+            document.getElementById('sMaxBal').innerText = peakBalance.toLocaleString('id-ID', {minimumFractionDigits: 2});
+        }
+
+        function drawChart() {
+            const cv = document.getElementById('balanceChart'); const ctx = cv.getContext('2d');
+            ctx.clearRect(0, 0, cv.width, cv.height);
+            if(balHistory.length < 2) return;
+            const max = Math.max(...balHistory, initialBalance * 1.05), min = Math.min(...balHistory, initialBalance * 0.95);
+            const range = (max - min) || 1, yBase = cv.height - ((initialBalance - min) / range) * cv.height;
+            const grad = ctx.createLinearGradient(0, 0, 0, cv.height);
+            const offset = Math.max(0, Math.min(1, yBase / cv.height));
+            grad.addColorStop(0, '#00e701'); grad.addColorStop(offset, '#00e701');
+            grad.addColorStop(offset, '#ff4444'); grad.addColorStop(1, '#ff4444');
+            const pts = balHistory.map((v, i) => ({ x: (i / (balHistory.length - 1)) * cv.width, y: cv.height - ((v - min) / range) * cv.height }));
+            ctx.beginPath(); ctx.strokeStyle = grad; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 0; i < pts.length - 1; i++) {
+                const mx = (pts[i].x + pts[i+1].x) / 2; const my = (pts[i].y + pts[i+1].y) / 2;
+                ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+            }
+            ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y); ctx.stroke();
+            ctx.setLineDash([5, 5]); ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.beginPath(); ctx.moveTo(0, yBase); ctx.lineTo(cv.width, yBase); ctx.stroke(); ctx.setLineDash([]);
+        }
+
+        window.onload = () => { vInit(); updateUI(); drawChart(); };
+    </script>
+</body>
+</html>

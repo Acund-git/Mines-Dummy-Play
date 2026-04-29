@@ -1,0 +1,16 @@
+{
+  "name": "Mines Pro Predictor",
+  "short_name": "MinesPro",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f212e",
+  "theme_color": "#1a2c38",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2874/2874371.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
