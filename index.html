@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mines Pro v4.6 - Final</title>
+    <title>Mines Pro v4.6 - Final Touch</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <style>
@@ -12,13 +12,26 @@
             --target-color: #f3ad0c; --mine-color: #ff4444; --text-main: #ffffff;
             --text-muted: #b1bad3; --border: #2f4553;
         }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; position: relative; }
+        /* Body harus relative supaya footer absolute nempel di bawahnya */
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background-color: var(--bg-dark); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh; 
+            position: relative; 
+            padding-bottom: 40px; /* Ruang untuk footer */
+        }
         
         .tabs { width: 100%; max-width: 480px; display: flex; background: var(--bg-panel); border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 100; }
         .tab-btn { flex: 1; padding: 15px; border: none; background: transparent; color: var(--text-muted); font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
         .tab-btn.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
 
-        .app-container { width: 100%; max-width: 480px; padding: 20px; box-sizing: border-box; display: none; padding-bottom: 80px; }
+        .app-container { width: 100%; max-width: 480px; padding: 20px; box-sizing: border-box; display: none; }
         .app-container.active { display: block; }
 
         .input-group { margin-bottom: 12px; }
@@ -52,8 +65,16 @@
         .history-list { margin-top: 10px; max-height: 80px; overflow-y: auto; font-size: 10px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 5px; }
         .history-item { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
-        /* Footer Fixed di Pojok Kiri Bawah */
-        .footer-credit { position: fixed; bottom: 10px; left: 15px; font-size: 10px; color: var(--text-muted); opacity: 0.8; pointer-events: none; z-index: 1000; text-shadow: 1px 1px 2px #000; }
+        /* Footer Absolute: Bakal diam di dasar halaman dokumen */
+        .footer-credit { 
+            position: absolute; 
+            bottom: 10px; 
+            left: 15px; 
+            font-size: 10px; 
+            color: var(--text-muted); 
+            opacity: 0.6; 
+            pointer-events: none; 
+        }
 
         .is-mine { background: rgba(255, 68, 68, 0.3) !important; border-color: var(--mine-color) !important; }
         .is-gem { background: rgba(0, 231, 1, 0.2) !important; border-color: var(--accent) !important; }
